@@ -185,7 +185,6 @@ function App() {
         
         if (pdfFiles.length === 1 && previews.length === 1) {
           // Single file with single page
-          const base64Data = previews[0].url.split(',')[1];
           const blob = await fetch(previews[0].url).then(r => r.blob());
           setDownloadUrl(URL.createObjectURL(blob));
           setDownloadFileName(`${fileName}.png`);
