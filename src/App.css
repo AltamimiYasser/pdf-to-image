@@ -1,12 +1,39 @@
 /* All styles moved to index.css */
 
-.files-list {
+.app-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+  height: 100%;
+  overflow: hidden; /* Prevent main content from scrolling */
+}
+
+.drop-zone-container {
+  flex-shrink: 0; /* Prevent drop zone from shrinking */
+}
+
+.files-container {
   width: 100%;
   max-width: 600px;
-  margin: 1rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Increased gap between files list and button */
+  flex: 1;
+  min-height: 0; /* Important for enabling scroll */
+  max-height: 50vh; /* Limit the height to 50% of viewport height */
+  position: relative;
+}
+
+.files-list {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-y: auto;
+  padding-right: 0.5rem; /* Space for scrollbar */
+  height: 100%;
 }
 
 .file-item {
@@ -44,6 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* Prevent button from shrinking */
 }
 
 .delete-button:hover {
@@ -55,18 +83,22 @@
   height: 1.25rem;
 }
 
+.convert-button-container {
+  width: 100%;
+  padding: 0 1rem;
+}
+
 .convert-button {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
   font-size: 1rem;
   font-weight: 500;
   color: white;
   background-color: #28a745;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  width: 100%;
 }
 
 .convert-button:hover:not(:disabled) {
@@ -77,4 +109,23 @@
   background-color: #6c757d;
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+/* Custom scrollbar styles */
+.files-list::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.files-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
+}
+
+.files-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 0.25rem;
+}
+
+.files-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }

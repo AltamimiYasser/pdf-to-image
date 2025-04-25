@@ -273,77 +273,83 @@ function App() {
       </header>
 
       <main className="app-main">
-        <div 
-          className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-        >
-          <div className="drop-zone-content">
-            <svg
-              className="drop-zone-icon"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m0 0l-4-4m4 4l4-4"
-              />
-            </svg>
+        <div className="drop-zone-container">
+          <div 
+            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+          >
+            <div className="drop-zone-content">
+              <svg
+                className="drop-zone-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m0 0l-4-4m4 4l4-4"
+                />
+              </svg>
 
-            <label htmlFor="file-input" className="drop-zone-label">
-              <input
-                id="file-input"
-                type="file"
-                accept=".pdf"
-                onChange={handleFileInput}
-                className="drop-zone-input"
-                multiple
-              />
-              <div className="drop-zone-text">
-                {isConverting ? 'Converting...' : 
-                 error ? <span className="error-text">{error}</span> :
-                 pdfFiles.length > 0 ? 'Drop PDFs or click to upload more files' :
-                 'Drop PDFs or click to upload'}
-              </div>
-            </label>
+              <label htmlFor="file-input" className="drop-zone-label">
+                <input
+                  id="file-input"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileInput}
+                  className="drop-zone-input"
+                  multiple
+                />
+                <div className="drop-zone-text">
+                  {isConverting ? 'Converting...' : 
+                   error ? <span className="error-text">{error}</span> :
+                   pdfFiles.length > 0 ? 'Drop PDFs or click to upload more files' :
+                   'Drop PDFs or click to upload'}
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 
         {pdfFiles.length > 0 && (
-          <div className="files-list">
-            {pdfFiles.map((pdfFile, index) => (
-              <div key={pdfFile.file.name + index} className="file-item">
-                <span className="file-name">{pdfFile.file.name}</span>
-                <button
-                  className="delete-button"
-                  onClick={() => handleRemoveFile(index)}
-                  aria-label="Remove file"
-                >
-                  <svg
-                    className="delete-icon"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+          <div className="files-container">
+            <div className="files-list">
+              {pdfFiles.map((pdfFile, index) => (
+                <div key={pdfFile.file.name + index} className="file-item">
+                  <span className="file-name">{pdfFile.file.name}</span>
+                  <button
+                    className="delete-button"
+                    onClick={() => handleRemoveFile(index)}
+                    aria-label="Remove file"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
-
-            <button
-              className="convert-button"
-              onClick={convertFiles}
-              disabled={isConverting || pdfFiles.length === 0}
-            >
-              {isConverting ? 'Converting...' : 'Convert'}
-            </button>
+                    <svg
+                      className="delete-icon"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="convert-button-container">
+              <button
+                className="convert-button"
+                onClick={convertFiles}
+                disabled={isConverting || pdfFiles.length === 0}
+              >
+                {isConverting ? 'Converting...' : 'Convert'}
+              </button>
+            </div>
           </div>
         )}
 
