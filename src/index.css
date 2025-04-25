@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Root styles */
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout foundation */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* App container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(to bottom right, #1a1f2e, #2c3242);
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: rgba(26, 31, 46, 0.5);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-logo {
+  width: 1rem;
+  height: 1rem;
+  color: #3b82f6;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #e2e8f0;
+}
+
+.header-subtitle {
+  font-size: 0.625rem;
+  line-height: 1;
+  margin-top: 0.125rem;
+  color: #94a3b8;
+}
+
+/* Main content */
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  min-height: 0;
+}
+
+/* Drop zone */
+.drop-zone {
+  position: relative;
+  width: clamp(7rem, 30vmin, 12rem);
+  height: clamp(7rem, 30vmin, 12rem);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.drop-zone:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.drop-zone.dragging {
+  background-color: rgba(59, 130, 246, 0.9);
+  transform: scale(1.1);
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+.drop-zone.has-file {
+  background-color: rgba(16, 185, 129, 0.9);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+}
+
+.drop-zone-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  transition: all 0.3s ease;
+  color: #94a3b8;
+}
+
+.drop-zone:hover .drop-zone-icon {
+  color: #3b82f6;
+}
+
+.drop-zone.dragging .drop-zone-icon,
+.drop-zone.has-file .drop-zone-icon {
+  color: white;
+}
+
+.drop-zone-text {
+  position: absolute;
+  bottom: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.625rem;
+  color: #94a3b8;
+  transition: color 0.3s ease;
+}
+
+.drop-zone.dragging .drop-zone-text,
+.drop-zone.has-file .drop-zone-text {
+  color: #e2e8f0;
+}
+
+.drop-zone-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Download button */
+.download-button {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  background-color: #10b981;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+  transition: all 0.3s ease;
+}
+
+.download-button:hover {
+  background-color: #059669;
+  transform: scale(1.1);
+}
+
+.download-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: white;
+}
+
+/* Error text */
+.error-text {
+  color: #ef4444;
+}
+
+/* Footer */
+.app-footer {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: rgba(26, 31, 46, 0.5);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-text {
+  font-size: 0.625rem;
+  color: #64748b;
+}
