@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import './App.css';
@@ -24,36 +24,54 @@ function App() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
+  // Handle drag events for the entire page
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target === document.documentElement) {
+        setIsDragging(false);
+      }
+    };
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    setError(null);
-    setDownloadUrl(null);
-    setDownloadFileName(null);
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      setPdfFile(file);
-      await handleFile(file);
-    } else {
-      setError('Please upload a valid PDF file');
-    }
-  }, []);
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const file = e.dataTransfer?.files[0];
+      if (file && file.type === 'application/pdf') {
+        setPdfFile(file);
+        await handleFile(file);
+      } else {
+        setError('Please upload a valid PDF file');
+      }
+    };
+
+    document.addEventListener('dragenter', handleDragEnter);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('drop', handleDrop);
+
+    return () => {
+      document.removeEventListener('dragenter', handleDragEnter);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, []); // Empty dependency array since we don't use any external values
 
   const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -139,6 +157,26 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Full page drop overlay */}
+      <div className={`full-page-drop ${isDragging ? 'active' : ''}`}>
+        <div className="drop-zone dragging">
+          <svg
+            className="drop-zone-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m0 0l-4-4m4 4l4-4"
+            />
+          </svg>
+          <div className="drop-zone-text">Drop PDF anywhere</div>
+        </div>
+      </div>
+
       <header className="app-header">
         <div className="header-content">
           <svg 
@@ -162,17 +200,12 @@ function App() {
       </header>
 
       <main className="app-main">
-        <div className="drop-zone-container">
-          <div 
-            className={`drop-zone ${isDragging ? 'dragging' : ''} ${pdfFile ? 'has-file' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-          >
+        <div 
+          className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+        >
+          <div className="drop-zone-content">
             <svg
-              className={`drop-zone-icon ${isDragging || pdfFile ? 'text-white' : isHovering ? 'text-blue-500' : 'text-slate-400'}`}
+              className="drop-zone-icon"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -181,50 +214,55 @@ function App() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d={pdfFile ? "M5 13l4 4L19 7" : "M12 4v16m0 0l-4-4m4 4l4-4"}
+                d="M12 4v16m0 0l-4-4m4 4l4-4"
               />
             </svg>
 
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileInput}
-              className="drop-zone-input"
-            />
-
-            <div className="drop-zone-text">
-              {isConverting ? 'Converting...' : 
-               error ? <span className="error-text">{error}</span> :
-               pdfFile ? pdfFile.name : 'Drop PDF'}
-            </div>
+            <label htmlFor="file-input" className="drop-zone-label">
+              <input
+                id="file-input"
+                type="file"
+                accept=".pdf"
+                onChange={handleFileInput}
+                className="drop-zone-input"
+              />
+              <div className="drop-zone-text">
+                {isConverting ? 'Converting...' : 
+                 error ? <span className="error-text">{error}</span> :
+                 'Drop PDF or click to upload'}
+              </div>
+            </label>
           </div>
-
-          {downloadUrl && (
-            <a
-              href={downloadUrl}
-              download={downloadFileName}
-              className="download-button"
-            >
-              <svg
-                className="download-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </a>
-          )}
         </div>
+
+        {downloadUrl && (
+          <a
+            href={downloadUrl}
+            download={downloadFileName}
+            className="download-button"
+          >
+            <svg
+              className="download-icon"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            <span className="download-text">
+              Download {downloadFileName}
+            </span>
+          </a>
+        )}
       </main>
 
       <footer className="app-footer">
-        <p className="footer-text">© 2024 Yasser Altamimi. All rights reserved.</p>
+        <p className="footer-text">© {new Date().getFullYear()} Yasser Altamimi. All rights reserved.</p>
       </footer>
     </div>
   );
