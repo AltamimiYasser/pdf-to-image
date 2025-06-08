@@ -41,7 +41,11 @@ function App() {
     const droppedFiles = Array.from(e.dataTransfer?.files || []);
     
     // Filter for PDF files
-    const validFiles = droppedFiles.filter(file => file.type === 'application/pdf');
+    const validFiles = droppedFiles.filter(file => {
+      const isMimePdf = file.type === 'application/pdf';
+      const endsWithPdf = file.name.toLowerCase().endsWith('.pdf');
+      return isMimePdf || endsWithPdf;
+    });
     
     if (validFiles.length > 0) {
       // Create new PDF file status objects
@@ -100,7 +104,11 @@ function App() {
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => file.type === 'application/pdf');
+    const validFiles = files.filter(file => {
+      const isMimePdf = file.type === 'application/pdf';
+      const endsWithPdf = file.name.toLowerCase().endsWith('.pdf');
+      return isMimePdf || endsWithPdf;
+    });
     
     if (validFiles.length > 0) {
       const newPdfFiles = validFiles.map(file => ({
