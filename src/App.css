@@ -47,6 +47,14 @@
   transition: all 0.2s ease;
 }
 
+.file-item[draggable="true"] {
+  cursor: grab;
+}
+
+.file-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 .file-item:hover {
   background-color: #e9ecef;
 }
@@ -128,4 +136,26 @@
 
 .files-list::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  margin-top: 0.5rem;
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tab-button.active {
+  background-color: #3b82f6;
+  color: white;
 }

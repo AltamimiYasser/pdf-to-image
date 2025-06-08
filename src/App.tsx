@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
+import { PDFDocument } from 'pdf-lib';
 import './App.css';
 
 // Set worker path
@@ -24,14 +25,24 @@ interface PDFFileStatus {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'convert' | 'merge'>('convert');
   const [pdfFiles, setPdfFiles] = useState<PDFFileStatus[]>([]);
+  const [mergeFiles, setMergeFiles] = useState<File[]>([]);
   const [isConverting, setIsConverting] = useState(false);
+  const [isCombining, setIsCombining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const internalDragRef = useRef(false);
+
+  const isFileDrag = (e: DragEvent) =>
+    !internalDragRef.current &&
+    Array.from(e.dataTransfer?.types || []).includes('Files');
 
   const handleDrop = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -48,31 +59,30 @@ function App() {
     });
     
     if (validFiles.length > 0) {
-      // Create new PDF file status objects
-      const newPdfFiles = validFiles.map(file => ({
-        file,
-        previews: [],
-        isConverted: false
-      }));
-      
-      // Update state, preserving existing files
-      setPdfFiles(prevFiles => {
-        console.log('Previous files:', prevFiles);
-        console.log('New files:', newPdfFiles);
-        return [...prevFiles, ...newPdfFiles];
-      });
+      if (activeTab === 'convert') {
+        const newPdfFiles = validFiles.map(file => ({
+          file,
+          previews: [],
+          isConverted: false
+        }));
+        setPdfFiles(prevFiles => [...prevFiles, ...newPdfFiles]);
+      } else {
+        setMergeFiles(prev => [...prev, ...validFiles]);
+      }
     } else if (droppedFiles.length > 0) {
       setError('Please upload valid PDF files only');
     }
-  }, []);
+  }, [activeTab]);
 
   const handleDragEnter = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     if (e.target === document.documentElement) {
@@ -81,6 +91,7 @@ function App() {
   }, []);
 
   const handleDragOver = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
   }, []);
@@ -111,16 +122,16 @@ function App() {
     });
     
     if (validFiles.length > 0) {
-      const newPdfFiles = validFiles.map(file => ({
-        file,
-        previews: [],
-        isConverted: false
-      }));
-      setPdfFiles(prevFiles => {
-        console.log('Previous files:', prevFiles);
-        console.log('New files:', newPdfFiles);
-        return [...prevFiles, ...newPdfFiles];
-      });
+      if (activeTab === 'convert') {
+        const newPdfFiles = validFiles.map(file => ({
+          file,
+          previews: [],
+          isConverted: false
+        }));
+        setPdfFiles(prevFiles => [...prevFiles, ...newPdfFiles]);
+      } else {
+        setMergeFiles(prev => [...prev, ...validFiles]);
+      }
       setError(null);
     } else {
       setError('Please upload valid PDF files');
@@ -132,6 +143,37 @@ function App() {
 
   const handleRemoveFile = (index: number) => {
     setPdfFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveMergeFile = (index: number) => {
+    setMergeFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDragStartItem = (index: number) => () => {
+    setDraggedIndex(index);
+    internalDragRef.current = true;
+  };
+
+  const handleDragOverItem = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDropItem = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setMergeFiles(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(draggedIndex, 1);
+      updated.splice(index, 0, moved);
+      return updated;
+    });
+    setDraggedIndex(null);
+    internalDragRef.current = false;
+  };
+
+  const handleDragEndItem = () => {
+    setDraggedIndex(null);
+    internalDragRef.current = false;
   };
 
   const convertFiles = async () => {
@@ -235,6 +277,37 @@ function App() {
     }
   };
 
+  const combineFiles = async () => {
+    setIsCombining(true);
+    setError(null);
+    setDownloadUrl(null);
+    setDownloadFileName(null);
+
+    try {
+      const mergedPdf = await PDFDocument.create();
+
+      for (const file of mergeFiles) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        pages.forEach(page => mergedPdf.addPage(page));
+      }
+
+      const bytes = await mergedPdf.save();
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      setDownloadUrl(URL.createObjectURL(blob));
+      setDownloadFileName('merged.pdf');
+    } catch (err) {
+      console.error('PDF merge error:', err);
+      setError(`Error merging PDF files: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsCombining(false);
+    }
+  };
+
+  const files = activeTab === 'convert' ? pdfFiles : mergeFiles;
+  const isProcessing = activeTab === 'convert' ? isConverting : isCombining;
+
   return (
     <div className="app-container">
       {/* Full page drop overlay */}
@@ -259,17 +332,17 @@ function App() {
 
       <header className="app-header">
         <div className="header-content">
-          <svg 
+          <svg
             className="header-logo"
-            fill="none" 
-            stroke="currentColor" 
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M4 16l4 4L19 7" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4 4L19 7"
             />
           </svg>
           <div className="header-text">
@@ -279,11 +352,24 @@ function App() {
         </div>
       </header>
 
+      <div className="tabs">
+        <button
+          className={`tab-button ${activeTab === 'convert' ? 'active' : ''}`}
+          onClick={() => setActiveTab('convert')}
+        >
+          PDF to PNG
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'merge' ? 'active' : ''}`}
+          onClick={() => setActiveTab('merge')}
+        >
+          Merge PDF
+        </button>
+      </div>
+
       <main className="app-main">
         <div className="drop-zone-container">
-          <div 
-            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-          >
+          <div className={`drop-zone ${isDragging ? 'dragging' : ''}`}>
             <div className="drop-zone-content">
               <svg
                 className="drop-zone-icon"
@@ -309,53 +395,103 @@ function App() {
                   multiple
                 />
                 <div className="drop-zone-text">
-                  {isConverting ? 'Converting...' : 
-                   error ? <span className="error-text">{error}</span> :
-                   pdfFiles.length > 0 ? 'Drop PDFs or click to upload more files' :
-                   'Drop PDFs or click to upload'}
+                  {isProcessing ? (
+                    activeTab === 'convert' ? 'Converting...' : 'Combining...'
+                  ) : error ? (
+                    <span className="error-text">{error}</span>
+                  ) : files.length > 0 ? (
+                    'Drop PDFs or click to upload more files'
+                  ) : (
+                    'Drop PDFs or click to upload'
+                  )}
                 </div>
               </label>
             </div>
           </div>
         </div>
 
-        {pdfFiles.length > 0 && (
+        {files.length > 0 && (
           <div className="files-container">
             <div className="files-list">
-              {pdfFiles.map((pdfFile, index) => (
-                <div key={pdfFile.file.name + index} className="file-item">
-                  <span className="file-name">{pdfFile.file.name}</span>
-                  <button
-                    className="delete-button"
-                    onClick={() => handleRemoveFile(index)}
-                    aria-label="Remove file"
-                  >
-                    <svg
-                      className="delete-icon"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+              {activeTab === 'convert'
+                ? pdfFiles.map((pdfFile, index) => (
+                    <div key={pdfFile.file.name + index} className="file-item">
+                      <span className="file-name">{pdfFile.file.name}</span>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleRemoveFile(index)}
+                        aria-label="Remove file"
+                      >
+                        <svg
+                          className="delete-icon"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))
+                : mergeFiles.map((file, index) => (
+                    <div
+                      key={file.name + index}
+                      className="file-item"
+                      draggable
+                      onDragStart={handleDragStartItem(index)}
+                      onDragOver={handleDragOverItem}
+                      onDrop={handleDropItem(index)}
+                      onDragEnd={handleDragEndItem}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
+                      <span className="file-name">{file.name}</span>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleRemoveMergeFile(index)}
+                        aria-label="Remove file"
+                      >
+                        <svg
+                          className="delete-icon"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
             </div>
-            
+
             <div className="convert-button-container">
-              <button
-                className="convert-button"
-                onClick={convertFiles}
-                disabled={isConverting || pdfFiles.length === 0}
-              >
-                {isConverting ? 'Converting...' : 'Convert'}
-              </button>
+              {activeTab === 'convert' ? (
+                <button
+                  className="convert-button"
+                  onClick={convertFiles}
+                  disabled={isConverting || pdfFiles.length === 0}
+                >
+                  {isConverting ? 'Converting...' : 'Convert'}
+                </button>
+              ) : (
+                mergeFiles.length >= 2 && (
+                  <button
+                    className="convert-button"
+                    onClick={combineFiles}
+                    disabled={isCombining}
+                  >
+                    {isCombining ? 'Combining...' : 'Combine'}
+                  </button>
+                )
+              )}
             </div>
           </div>
         )}
@@ -379,9 +515,7 @@ function App() {
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
               />
             </svg>
-            <span className="download-text">
-              Download {downloadFileName}
-            </span>
+            <span className="download-text">Download {downloadFileName}</span>
           </a>
         )}
       </main>
