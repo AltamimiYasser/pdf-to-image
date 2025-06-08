@@ -36,7 +36,11 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  const isFileDrag = (e: DragEvent) =>
+    Array.from(e.dataTransfer?.types || []).includes('Files');
+
   const handleDrop = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -69,12 +73,14 @@ function App() {
   }, [activeTab]);
 
   const handleDragEnter = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
-  }, [activeTab]);
+  }, []);
 
   const handleDragLeave = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     if (e.target === document.documentElement) {
@@ -83,6 +89,7 @@ function App() {
   }, []);
 
   const handleDragOver = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
   }, []);
